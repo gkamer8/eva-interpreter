@@ -83,12 +83,12 @@ class Eva:
         return result
 
 
-def isNumber(exp):
-    return type(exp) is int or type(exp) is float
+    def _isNumber(exp):
+        return type(exp) is int or type(exp) is float
 
-def isString(exp):
-    return type(exp) is str and exp[0] == '"' and exp[-1] == '"'
+    def _isString(exp):
+        return type(exp) is str and exp[0] == '"' and exp[-1] == '"'
 
-def isVariableName(exp):
-    return type(exp) == str and re.search('^[a-zA-Z][a-zA-Z0-9]*$', exp) is not None
+    def _isVariableName(exp):
+        return type(exp) == str and re.search('^[a-zA-Z][a-zA-Z0-9]*$', exp) is not None
 
