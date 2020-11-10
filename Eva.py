@@ -1,5 +1,6 @@
 from Environment import Environment
 import re
+import collections
 
 default_env = {
     'VERSION': '0.1'
@@ -7,38 +8,17 @@ default_env = {
 
 class Eva:
 
-    def __init__(self, glob=Environment(default_env)):
+    def __init__(self, glob=GlobalEnvironment):
         self.glob = glob
 
     def eval(self, exp, env=None):
         if env is None:
             env = self.glob
 
-        if isNumber(exp):  # Ints and floats
+        if self._isNumber(exp):  # Ints and floats
             return exp
-        if isString(exp):  # Strings
+        if self._isString(exp):  # Strings
             return exp[1:-1]
-
-        # Math operations
-
-        if exp[0] == '+':  # Addition
-            return self.eval(exp[1], env) + self.eval(exp[2], env)
-        if exp[0] == '*':  # Multiplication
-            return self.eval(exp[1], env) * self.eval(exp[2], env)
-        if exp[0] == '-':  # Subtraction
-            return self.eval(exp[1], env) - self.eval(exp[2], env)
-        if exp[0] == '/':  # Division
-            return self.eval(exp[1], env) / self.eval(exp[2], env)
-
-        # Comparison operators
-        if exp[0] == '>':
-            return self.eval(exp[1], env) > self.eval(exp[2], env)
-        if exp[0] == '<':
-            return self.eval(exp[1], env) < self.eval(exp[2], env)
-        if exp[0] == '>=':
-            return self.eval(exp[1], env) >= self.eval(exp[2], env)
-        if exp[0] == '<=':
-            return self.eval(exp[1], env) <= self.eval(exp[2], env)
 
         # Block
 
@@ -57,7 +37,7 @@ class Eva:
             return env.assign(name, self.eval(value, env))
 
         # Variable access
-        if isVariableName(exp):
+        if self._isVariableName(exp):
             return env.lookup(exp)
 
         # If expression
@@ -74,6 +54,19 @@ class Eva:
                 result = self.eval(body, env)
             return result
 
+        # Function calls
+        if type(exp) is list:
+            fn = self.eval(exp[0])
+            args = list(map(lambda x: self.eval(x, env), exp[1:]))
+
+            # Native function
+            # If the function is an actual Python callable (function)
+            if isinstance(fn, collections.Callable):
+                pass
+
+            # user defined function
+
+
         raise NotImplementedError
 
     def _evalBlock(self, block, env):
@@ -83,12 +76,27 @@ class Eva:
         return result
 
 
-    def _isNumber(exp):
+    def _isNumber(self, exp):
         return type(exp) is int or type(exp) is float
 
-    def _isString(exp):
+    def _isString(self, exp):
         return type(exp) is str and exp[0] == '"' and exp[-1] == '"'
 
-    def _isVariableName(exp):
-        return type(exp) == str and re.search('^[a-zA-Z][a-zA-Z0-9]*$', exp) is not None
+    def _isVariableName(self, exp):
+        return type(exp) == str and re.search('^[+\-*/<>=a-zA-Z0-9_]*$', exp) is not None
 
+GlobalEnvironment = Environment({
+    'null': None,
+    'true': True,
+    'false': False,
+    'VERSION': '0.1',
+    '+': lambda x, y: x + y,
+    '*': lambda x, y: x * y,
+    '-': lambda x, y=None: -x if y is None else x - y,
+    '/': lambda x, y: x / y,
+    '>': lambda x, y: x > y,
+    '<': lambda x, y: x < y,
+    '>=': lambda x, y: x >= y,
+    '<=': lambda x, y: x <= y,
+    '=': lambda x, y: x == y
+})
